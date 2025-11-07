@@ -105,9 +105,11 @@ export function ProjectInfo() {
 
     return Object.entries(requiredFields).every(([key, value]) => {
       if (key === 'electricRate') {
-        return (
-          value !== '' && value !== null && value !== undefined && value > 0
-        );
+        if (value === '' || value === null || value === undefined) {
+          return false;
+        }
+        const numericValue = typeof value === 'number' ? value : Number(value);
+        return Number.isFinite(numericValue) && numericValue > 0;
       }
       return value && value.toString().trim() !== '';
     });
