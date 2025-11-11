@@ -1,16 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-} from 'recharts';
 import { Bolt, Clock, TrendingUp, Leaf } from 'lucide-react';
 
 import { Card } from '@/components/shared/Card';
@@ -19,6 +9,8 @@ import { ReportPreviewModal } from '@/components/wizard/ReportPreviewModal';
 import { useWizard } from '@/contexts/WizardContext';
 import { type Project } from '@/lib/mockData';
 import { useRouter } from 'next/navigation';
+import { EnergyLineChart } from '@/components/charts/EnergyLineChart';
+import { LifecycleAreaChart } from '@/components/charts/LifecycleAreaChart';
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -129,20 +121,6 @@ export function ResultsDashboard({ project, results }: ResultsDashboardProps) {
 
   const compareCop17Value = formatCop(project.systemCompare.cop17) ?? '—';
 
-  const energyChartData = useMemo(
-    () => [
-      {
-        name: 'Baseline',
-        kWh: results.baselineAnnualKWh,
-      },
-      {
-        name: 'Daikin INV',
-        kWh: results.compareAnnualKWh,
-      },
-    ],
-    [results.baselineAnnualKWh, results.compareAnnualKWh]
-  );
-
   const lifecycleYears = project.analysisPeriodYears;
   const baselineEnergyCost = results.baselineAnnualCost * lifecycleYears;
   const compareEnergyCost = results.compareAnnualCost * lifecycleYears;
@@ -151,30 +129,6 @@ export function ResultsDashboard({ project, results }: ResultsDashboardProps) {
   const compareMaintenance = baselineMaintenance * 0.85;
   const baselineCapex = 0;
   const compareCapex = 5000;
-
-  const lifecycleChartData = useMemo(
-    () => [
-      {
-        name: 'Baseline',
-        Energy: Math.round(baselineEnergyCost),
-        Maintenance: Math.round(baselineMaintenance),
-        CapEx: baselineCapex,
-      },
-      {
-        name: 'Daikin INV',
-        Energy: Math.round(compareEnergyCost),
-        Maintenance: Math.round(compareMaintenance),
-        CapEx: compareCapex,
-      },
-    ],
-    [
-      baselineEnergyCost,
-      baselineMaintenance,
-      compareEnergyCost,
-      compareMaintenance,
-      compareCapex,
-    ]
-  );
 
   const detailedRows = [
     {
@@ -302,71 +256,30 @@ export function ResultsDashboard({ project, results }: ResultsDashboardProps) {
       {/* Charts */}
       <section aria-label="Comparison charts" className="space-y-3">
         <div
-          className={`grid grid-cols-1 lg:grid-cols-2 gap-6 transition-opacity duration-500 ${
+          className={`flex flex-col gap-6 transition-opacity duration-500 ${
             chartsVisible ? 'opacity-100' : 'opacity-0'
           }`}
         >
-          <Card
-            title="Energy Use Comparison"
-            description="Annual energy consumption"
-          >
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={energyChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis
-                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-                />
-                <Tooltip
-                  formatter={(value: number) => value.toLocaleString()}
-                  labelFormatter={(label) => `${label}`}
-                />
-                <Legend />
-                <Bar
-                  dataKey="kWh"
-                  name="Annual kWh"
-                  fill="#007AC2"
-                  radius={[6, 6, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+          <Card title="Energy Trend" description="Annual energy consumption">
+            <EnergyLineChart
+              data={project.energySeries}
+              metricLabel="Annual kWh"
+              unit="kWh"
+            />
             <p className="mt-4 text-xs text-daikin-gray-500">
               Data source: Project load model (mock)
             </p>
           </Card>
 
           <Card
-            title="Lifecycle Cost Comparison"
-            description={`Stacked energy, maintenance, and capital over ${lifecycleYears} years`}
+            title="Lifecycle Cost Trend"
+            description={`Stacked energy, maintenance, and capex over ${lifecycleYears} years`}
           >
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={lifecycleChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis
-                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-                />
-                <Tooltip
-                  formatter={(value: number) =>
-                    currencyFormatterPrecise.format(value)
-                  }
-                />
-                <Legend />
-                <Bar
-                  dataKey="Energy"
-                  stackId="a"
-                  fill="#007AC2"
-                  radius={[6, 6, 0, 0]}
-                />
-                <Bar dataKey="Maintenance" stackId="a" fill="#3B82F6" />
-                <Bar
-                  dataKey="CapEx"
-                  stackId="a"
-                  fill="#60A5FA"
-                  radius={[6, 6, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            <LifecycleAreaChart
+              baselineData={project.lifecycleBaselineSeries}
+              invData={project.lifecycleInvSeries}
+              unit="$"
+            />
             <p className="mt-4 text-xs text-daikin-gray-500">
               Data source: Cost model assumptions (mock)
             </p>

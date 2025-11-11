@@ -101,6 +101,9 @@ export default function ResultsPage() {
       },
       analysisPeriodYears: MOCK_PROJECT.analysisPeriodYears,
       results: results ?? MOCK_PROJECT.results,
+      energySeries: MOCK_PROJECT.energySeries,
+      lifecycleBaselineSeries: MOCK_PROJECT.lifecycleBaselineSeries,
+      lifecycleInvSeries: MOCK_PROJECT.lifecycleInvSeries,
     };
   }, [formData, results]);
 

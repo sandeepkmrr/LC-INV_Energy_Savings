@@ -46,7 +46,73 @@ export interface Project {
     lifecycleSavings: number;
     co2ReductionTonsPerYear: number;
   };
+  energySeries: Array<{ year: number; baseline: number; inv: number }>;
+  lifecycleBaselineSeries: Array<{
+    year: number;
+    energy: number;
+    maintenance: number;
+    capex: number;
+  }>;
+  lifecycleInvSeries: Array<{
+    year: number;
+    energy: number;
+    maintenance: number;
+    capex: number;
+  }>;
 }
+
+const ANALYSIS_PERIOD_YEARS = 15;
+const ENERGY_ESCALATION_RATE = 0.02;
+const COST_ESCALATION_RATE = 0.02;
+
+const baselineAnnualKWh = 98000;
+const compareAnnualKWh = 75000;
+const baselineAnnualCost = 11760;
+const compareAnnualCost = 9000;
+const baselineMaintenanceCost = 800;
+const compareMaintenanceCost = baselineMaintenanceCost * 0.85;
+const compareCapexInitial = 5000;
+
+const energySeries = Array.from(
+  { length: ANALYSIS_PERIOD_YEARS },
+  (_, index) => {
+    const year = index + 1;
+    const escalationFactor = Math.pow(1 + ENERGY_ESCALATION_RATE, index);
+    return {
+      year,
+      baseline: Math.round(baselineAnnualKWh * escalationFactor),
+      inv: Math.round(compareAnnualKWh * escalationFactor),
+    };
+  }
+);
+
+const lifecycleBaselineSeries = Array.from(
+  { length: ANALYSIS_PERIOD_YEARS },
+  (_, index) => {
+    const year = index + 1;
+    const escalationFactor = Math.pow(1 + COST_ESCALATION_RATE, index);
+    return {
+      year,
+      energy: Math.round(baselineAnnualCost * escalationFactor),
+      maintenance: Math.round(baselineMaintenanceCost),
+      capex: 0,
+    };
+  }
+);
+
+const lifecycleInvSeries = Array.from(
+  { length: ANALYSIS_PERIOD_YEARS },
+  (_, index) => {
+    const year = index + 1;
+    const escalationFactor = Math.pow(1 + COST_ESCALATION_RATE, index);
+    return {
+      year,
+      energy: Math.round(compareAnnualCost * escalationFactor),
+      maintenance: Math.round(compareMaintenanceCost),
+      capex: year === 1 ? compareCapexInitial : 0,
+    };
+  }
+);
 
 export const MOCK_PROJECT: Project = {
   project: { name: 'Lincoln HS Rooftop Retrofit' },
@@ -71,7 +137,7 @@ export const MOCK_PROJECT: Project = {
   electricRate: 0.12,
   maintenanceCostPerYear: 800,
   rebate: { source: 'EcoRebates', amount: 1500 },
-  analysisPeriodYears: 15,
+  analysisPeriodYears: ANALYSIS_PERIOD_YEARS,
   results: {
     baselineAnnualKWh: 98000,
     compareAnnualKWh: 75000,
@@ -83,6 +149,9 @@ export const MOCK_PROJECT: Project = {
     lifecycleSavings: 55000,
     co2ReductionTonsPerYear: 10.4,
   },
+  energySeries,
+  lifecycleBaselineSeries,
+  lifecycleInvSeries,
 };
 
 export interface ZipLookupResult {
